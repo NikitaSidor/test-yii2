@@ -11,6 +11,9 @@ $this->title = 'Отправка задачи';
 ?>
 
     <h1><?= Html::encode($this->title) ?></h1>
+    <div class="alert alert-warning">
+        Будут отправлены на проверку файлы models/Task.php и views/task/index.php.<br> Обязательно укажите реальный ник Telegram, чтобы мы могли дать обратную связь.
+    </div>
 
 <?php if (Yii::$app->session->hasFlash('error')): ?>
     <div class="alert alert-danger">
