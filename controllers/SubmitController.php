@@ -17,7 +17,7 @@ class SubmitController extends Controller
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
             try {
-                $service = new TaskSubmitService($model->access_code);
+                $service = new TaskSubmitService($model->tg_nickname);
                 $result = $service->submit();
             } catch (\Exception $e) {
                 Yii::$app->session->setFlash('error', 'Ошибка: ' . $e->getMessage());

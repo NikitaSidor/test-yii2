@@ -7,7 +7,7 @@ use yii\httpclient\Client;
 
 class TaskSubmitService
 {
-    private string $accessCode;
+    private string $tgNickname;
     private string $endpoint = 'https://pulse.vladimirdrobnitsa.online/applicants/submit-test';
 //    private string $endpoint = 'http://pulse.local/applicants/submit-test';
 
@@ -17,9 +17,9 @@ class TaskSubmitService
         'views/task/index.php',
     ];
 
-    public function __construct(string $accessCode)
+    public function __construct(string $tgNickname)
     {
-        $this->accessCode = $accessCode;
+        $this->tgNickname = $tgNickname;
     }
 
     /**
@@ -65,7 +65,7 @@ class TaskSubmitService
         ->setMethod('POST')
         ->setUrl($this->endpoint)
         ->addFile('archive', $zipPath)
-        ->setData(['access_code' => $this->accessCode])
+        ->setData(['tg_nickname' => $this->tgNickname])
         ->send();
 
         // Удаляем временный архив

@@ -6,20 +6,20 @@ use yii\base\Model;
 
 class SubmitForm extends Model
 {
-    public string $access_code = '';
+    public string $tg_nickname = '';
 
     public function rules()
     {
         return [
-            ['access_code', 'required'],
-            ['access_code', 'string', 'max' => 10],
+            ['tg_nickname', 'required'],
+            ['tg_nickname', 'string', 'max' => 64],
         ];
     }
 
     public function attributeLabels()
     {
         return [
-            'access_code' => 'Код доступа'
+            'tg_nickname' => 'Имя пользователя Telegram'
         ];
     }
 }

@@ -33,7 +33,7 @@ $this->title = 'Отправка задачи';
 
 <?php $form = ActiveForm::begin(); ?>
 
-    <?= $form->field($model, 'access_code')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'tg_nickname')->textInput(['maxlength' => true]) ?>
 
     <div class="form-group">
         <?= Html::submitButton('Отправить', ['class' => 'btn btn-primary']) ?>
