@@ -6,10 +6,10 @@ use yii\base\Model;
 
 class Task extends Model
 {
-    public $id;
-    public $order;
-    public $title;
-    public $checked;
+    public int $id;
+    public int $order;
+    public string $title;
+    public bool $checked;
 
     private const INIT_DATA = [
         ['id' => 4, 'order' => 2, 'title' => 'Сделать тестовое задание', 'checked' => false],
