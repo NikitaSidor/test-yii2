@@ -18,12 +18,17 @@ class TaskController extends Controller
         return $this->render('index', ['dataProvider' => $dataProvider]);
     }
 
-    public function actionSetState($id)
+    public function actionSetState()
     {
+        $id = Yii::$app->request->post('id');
+        $checked = Yii::$app->request->post('checked');
+
         $model = Task::findOne($id);
-        if($model && $model->load(Yii::$app->request->post(), '')) {
-            $model->save();
-            return true;
+        if($model) {
+            $model->checked = (bool)$checked;
+            if ($model->save()) {
+                return json_encode(['success' => true]);
+            }
         }
         throw new BadRequestHttpException();
     }
