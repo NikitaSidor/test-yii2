@@ -10,25 +10,24 @@ $this->registerCsrfMetaTags();
 $setStateUrl = Url::to(['task/set-state']);
 
 $js = <<<JS
-// Обработчик клика по чекбоксу
 $(document).on('change', '.task-checkbox', function() {
     var checkbox = $(this);
     var taskId = checkbox.data('id');
     var isChecked = checkbox.is(':checked');
     var originalState = !isChecked;
-    
+    var csrf = $('meta[name="csrf-token"]').attr('content');
+
     $.ajax({
         url: '$setStateUrl',
         type: 'POST',
         dataType: 'json',
         data: {
             id: taskId,
-            checked: isChecked ? 1 : 0
+            checked: isChecked ? 1 : 0,
+            _csrf: csrf
         },
         success: function(response) {
-            if (response && response.success) {
-                console.log('Статус задачи обновлен');
-            } else {
+            if (!response || !response.success) {
                 checkbox.prop('checked', originalState);
                 alert('Ошибка при сохранении');
             }
@@ -45,12 +44,13 @@ JS;
 $this->registerJs($js);
 ?>
 
-    <h1><?= Html::encode($this->title) ?></h1>
+<h1><?= Html::encode($this->title) ?></h1>
 
 <?php Pjax::begin(); ?>
 
 <?= GridView::widget([
         'dataProvider' => $dataProvider,
+        'filterModel' => $searchModel ?? null,
         'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
                 [
@@ -66,15 +66,12 @@ $this->registerJs($js);
                         'label' => 'Статус',
                         'format' => 'raw',
                         'value' => function ($model) {
-                            return Html::checkbox('checked', $model->checked, [
+                            return Html::checkbox('checked', (bool)$model->checked, [
                                     'class' => 'task-checkbox',
                                     'data-id' => $model->id,
                             ]);
                         },
-                        'filter' => [
-                                0 => 'Не выполнена',
-                                1 => 'Выполнена'
-                        ],
+                        'filter' => [0 => 'Не выполнена', 1 => 'Выполнена'],
                 ],
         ],
 ]); ?>

@@ -25,7 +25,7 @@ class Task extends Model
             [['id', 'order'], 'integer'],
             [['title'], 'string', 'max' => 255],
             [['checked'], 'boolean'],
-            [['id', 'order', 'title'], 'required'],
+            [['order', 'title'], 'required'], // ID не обязателен для новых записей
         ];
     }
 
@@ -43,13 +43,29 @@ class Task extends Model
     {
         $tasks = self::getAllTasks();
 
-        // Сортировка по полю order в порядке возрастания
-        usort($tasks, function ($a, $b) {
-            return $a->order - $b->order;
+        // Загрузка параметров фильтрации
+        $this->load($params);
+
+        // Фильтрация
+        $filteredTasks = array_filter($tasks, function($task) {
+            $match = true;
+            if ($this->title) {
+                $match = stripos($task->title, $this->title) !== false;
+            }
+            if ($match && $this->checked !== null && $this->checked !== '') {
+                // Преобразуем к boolean для сравнения
+                $taskChecked = filter_var($task->checked, FILTER_VALIDATE_BOOLEAN);
+                $filterChecked = filter_var($this->checked, FILTER_VALIDATE_BOOLEAN);
+                $match = $taskChecked === $filterChecked;
+            }
+            return $match;
         });
 
-        $dataProvider = new ArrayDataProvider([
-            'allModels' => $tasks,
+        // Сортировка по order
+        usort($filteredTasks, fn($a, $b) => $a->order - $b->order);
+
+        return new ArrayDataProvider([
+            'allModels' => $filteredTasks,
             'sort' => [
                 'attributes' => ['id', 'order', 'title', 'checked'],
             ],
@@ -57,11 +73,6 @@ class Task extends Model
                 'pageSize' => 10,
             ],
         ]);
-
-        // Загрузка параметров фильтрации
-        $this->load($params);
-
-        return $dataProvider;
     }
 
     public function save()
@@ -70,38 +81,64 @@ class Task extends Model
             return false;
         }
 
-        // Получаем ВСЕ задачи из кэша
         $tasks = self::getAllTasks();
-
         $found = false;
+
+        // Если это новая запись (без ID), генерируем новый ID
+        if (empty($this->id)) {
+            $this->id = $this->generateNewId($tasks);
+        } else {
+            $this->id = (int)$this->id;
+        }
+
+        // Преобразуем checked к правильному формату
+        $this->checked = filter_var($this->checked, FILTER_VALIDATE_BOOLEAN);
+
         foreach ($tasks as $index => $task) {
-            if ($task->id == $this->id) {
-                // Обновляем найденную задачу текущими данными модели
-                $tasks[$index] = $this;
+            if ((int)$task->id === (int)$this->id) {
+                $tasks[$index] = clone $this;
                 $found = true;
                 break;
             }
         }
 
         if (!$found) {
-            $tasks[] = $this;
+            $tasks[] = clone $this;
         }
 
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сохраняем измененный массив ВСЕХ задач обратно в кэш
-        return Yii::$app->cache->set('tasks', $tasks);
+        // Сохраняем в кэш
+        Yii::$app->cache->set('tasks', $tasks);
+        return true;
+    }
+
+    public function delete()
+    {
+        $tasks = self::getAllTasks();
+        $newTasks = array_filter($tasks, function($task) {
+            return (int)$task->id !== (int)$this->id;
+        });
+
+        return Yii::$app->cache->set('tasks', array_values($newTasks));
+    }
+
+    private function generateNewId($tasks)
+    {
+        $maxId = 0;
+        foreach ($tasks as $task) {
+            if ($task->id > $maxId) {
+                $maxId = $task->id;
+            }
+        }
+        return $maxId + 1;
     }
 
     public static function findOne($id)
     {
-        // Защита от передачи null или нечислового значения
-        if ($id === null) {
-            return null;
-        }
+        if ($id === null) return null;
 
         $tasks = self::getAllTasks();
         foreach ($tasks as $task) {
-            // Строгое сравнение, учитывая тип
-            if ($task->id == $id) {
+            if ((int)$task->id === (int)$id) {
                 return $task;
             }
         }
@@ -111,17 +148,16 @@ class Task extends Model
     public static function getAllTasks()
     {
         $tasks = Yii::$app->cache->get('tasks');
-
         if ($tasks === false) {
             $tasks = [];
             foreach (self::INIT_DATA as $data) {
                 $task = new self();
                 $task->attributes = $data;
+                $task->checked = filter_var($data['checked'], FILTER_VALIDATE_BOOLEAN);
                 $tasks[] = $task;
             }
             Yii::$app->cache->set('tasks', $tasks);
         }
-
         return $tasks;
     }
 }
